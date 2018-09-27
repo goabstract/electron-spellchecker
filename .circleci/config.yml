@@ -1,0 +1,72 @@
+defaults: &defaults
+  working_directory: ~/repo
+  docker:
+    - image: circleci/node:10-browsers
+
+version: 2
+jobs:
+  checkout:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore Yarn Package Cache
+          keys:
+            - yarn-packages-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - yarn-packages-{{ .Branch }}
+            - yarn-packages-master
+            - yarn-packages-
+      - run:
+          name: Install Dependencies
+          command: yarn install --frozen-lockfile
+      - save_cache:
+          name: Save Yarn Package Cache
+          key: yarn-packages-{{ .Branch }}-{{ checksum "yarn.lock" }}
+          paths:
+            - node_modules/
+      - persist_to_workspace:
+          root: ~/repo
+          paths: .
+  test:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Test project
+          command: yarn test
+  deploy:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Publish to npm
+          command: npm publish
+
+tagged: &tagged
+  filters:
+    tags:
+      only: /^v.*/
+    branches:
+      ignore: /.*/
+
+any: &any
+  filters:
+    tags:
+      only: /.*/
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - checkout:
+          <<: *any
+      - test:
+          <<: *any
+          requires:
+            - checkout
+      - deploy:
+          <<: *tagged
+          requires:
+            - test
