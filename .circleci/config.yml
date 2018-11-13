@@ -27,15 +27,7 @@ jobs:
       - persist_to_workspace:
           root: ~/repo
           paths: .
-  test:
-    <<: *defaults
-    steps:
-      - attach_workspace:
-          at: ~/repo
-      - run:
-          name: Test project
-          command: yarn test
-  deploy:
+  publish:
     <<: *defaults
     steps:
       - attach_workspace:
@@ -62,11 +54,7 @@ workflows:
     jobs:
       - checkout:
           <<: *any
-      - test:
-          <<: *any
-          requires:
-            - checkout
-      - deploy:
+      - publish:
           <<: *tagged
           requires:
             - test
