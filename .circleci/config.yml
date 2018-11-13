@@ -56,5 +56,3 @@ workflows:
           <<: *any
       - publish:
           <<: *tagged
-          requires:
-            - test
