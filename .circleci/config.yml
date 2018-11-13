@@ -56,3 +56,5 @@ workflows:
           <<: *any
       - publish:
           <<: *tagged
+          requires:
+            - checkout
