@@ -1,6 +1,6 @@
 {
   "name": "@elasticprojects/electron-spellchecker",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Implement spellchecking, correctly",
   "scripts": {
     "doc": "esdoc -c ./esdoc.json",
@@ -29,9 +29,8 @@
   "main": "lib/index.js",
   "homepage": "https://github.com/paulcbetts/electron-spellchecker",
   "dependencies": {
-    "cld": "^2.4.8",
-    "spellchecker": "^3.4.3",
     "bcp47": "^1.1.2",
+    "cld": "^2.4.8",
     "debug": "^2.6.3",
     "electron-remote": "^1.1.1",
     "keyboard-layout": "^2.0.14",
@@ -40,7 +39,8 @@
     "pify": "^2.3.0",
     "rxjs": "^5.0.1",
     "rxjs-serial-subscription": "^0.1.1",
-    "spawn-rx": "^2.0.7"
+    "spawn-rx": "^2.0.7",
+    "spellchecker": "^3.4.3"
   },
   "devDependencies": {
     "@kwonoj/rxjs-testscheduler-compat": "0.0.4",
