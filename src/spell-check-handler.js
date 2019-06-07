@@ -130,7 +130,6 @@ module.exports = class SpellCheckHandler {
     this.isMisspelledCache = new LRU({ max: 5000 });
 
     this.scheduler = scheduler;
-    this.shouldAutoCorrect = true;
     this._automaticallyIdentifyLanguages = true;
 
     this.disp = new SerialSubscription();
@@ -143,7 +142,6 @@ module.exports = class SpellCheckHandler {
       if (webFrame) {
         webFrame.setSpellCheckProvider(
           this.currentSpellcheckerLanguage,
-          this.shouldAutoCorrect,
           { spellCheck: this.handleElectronSpellCheck.bind(this) });
       }
       return;
@@ -303,7 +301,6 @@ module.exports = class SpellCheckHandler {
           d('Actually installing spell check provider to Electron');
           webFrame.setSpellCheckProvider(
             this.currentSpellcheckerLanguage,
-            this.shouldAutoCorrect,
             { spellCheck: this.handleElectronSpellCheck.bind(this) });
 
           prevSpellCheckLanguage = this.currentSpellcheckerLanguage;
@@ -470,14 +467,15 @@ module.exports = class SpellCheckHandler {
     if (!this.currentSpellchecker) return true;
 
     if (isMac) {
-      return !this.isMisspelled(text);
+      let result = this.isMisspelled(text);
+      return result;
     }
 
     this.spellCheckInvoked.next(true);
 
     let result = this.isMisspelled(text);
     if (result) this.spellingErrorOccurred.next(text);
-    return !result;
+    return result;
   }
 
   /**
@@ -486,43 +484,45 @@ module.exports = class SpellCheckHandler {
    *
    * @private
    */
-  isMisspelled(text) {
-    let result = this.isMisspelledCache.get(text);
-    if (result !== undefined) {
+  isMisspelled(words) {
+    return words.filter(text => {
+      let result = this.isMisspelledCache.get(text);
+      if (result !== undefined) {
+        return result;
+      }
+
+      result = (() => {
+        if (contractionMap[text.toLocaleLowerCase()]) {
+          return false;
+        }
+
+        if (!this.currentSpellchecker) return false;
+
+        if (isMac) {
+          return this.currentSpellchecker.isMisspelled(text);
+        }
+
+        // NB: I'm not smart enough to fix this bug in Chromium's version of
+        // Hunspell so I'm going to fix it here instead. Chromium Hunspell for
+        // whatever reason marks the first word in a sentence as mispelled if it is
+        // capitalized.
+        result = this.currentSpellchecker.checkSpelling(text);
+        if (result.length < 1) {
+          return false;
+        }
+
+        if (result[0].start !== 0) {
+          // If we're not at the beginning, we know it's not a false positive
+          return true;
+        }
+
+        // Retry with lowercase
+        return this.currentSpellchecker.isMisspelled(text.toLocaleLowerCase());
+      })();
+
+      this.isMisspelledCache.set(text, result);
       return result;
-    }
-
-    result = (() => {
-      if (contractionMap[text.toLocaleLowerCase()]) {
-        return false;
-      }
-
-      if (!this.currentSpellchecker) return false;
-
-      if (isMac) {
-        return this.currentSpellchecker.isMisspelled(text);
-      }
-
-      // NB: I'm not smart enough to fix this bug in Chromium's version of
-      // Hunspell so I'm going to fix it here instead. Chromium Hunspell for
-      // whatever reason marks the first word in a sentence as mispelled if it is
-      // capitalized.
-      result = this.currentSpellchecker.checkSpelling(text);
-      if (result.length < 1) {
-        return false;
-      }
-
-      if (result[0].start !== 0) {
-        // If we're not at the beginning, we know it's not a false positive
-        return true;
-      }
-
-      // Retry with lowercase
-      return this.currentSpellchecker.isMisspelled(text.toLocaleLowerCase());
-    })();
-
-    this.isMisspelledCache.set(text, result);
-    return result;
+    });
   }
 
   /**
