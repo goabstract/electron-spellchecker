@@ -1,5 +1,5 @@
-import {clipboard, nativeImage, remote, shell} from 'electron';
-import {truncateString, matchesWord} from './utility';
+const {clipboard, nativeImage, remote, shell} = require('electron');
+const {truncateString, matchesWord} = require('./utility');
 
 const {Menu, MenuItem} = remote;
 
@@ -27,7 +27,7 @@ const contextMenuStringTable = {
  * which we use to generate the menu. We also use the spell-check information to
  * generate suggestions.
  */
-export default class ContextMenuBuilder {
+module.exports = class ContextMenuBuilder {
   /**
    * Creates an instance of ContextMenuBuilder
    *
@@ -96,7 +96,7 @@ export default class ContextMenuBuilder {
   async showPopupMenu(contextInfo) {
     let menu = await this.buildMenuForElement(contextInfo);
     if (!menu) return;
-    menu.popup(remote.getCurrentWindow(), { async: true });
+    menu.popup({});
   }
 
   /**
@@ -234,20 +234,19 @@ export default class ContextMenuBuilder {
 
     // Ensure that we have valid corrections for that word
     let corrections = await this.spellCheckHandler.getCorrectionsForMisspelling(menuInfo.misspelledWord);
-    if (!corrections || !corrections.length) {
-      return menu;
-    }
 
-    corrections.forEach((correction) => {
-      let item = new MenuItem({
-        label: correction,
-        click: () => target.replaceMisspelling(correction)
+    if (corrections && corrections.length) {
+      corrections.forEach((correction) => {
+        let item = new MenuItem({
+          label: correction,
+          click: () => target.replaceMisspelling(correction)
+        });
+
+        menu.append(item);
       });
 
-      menu.append(item);
-    });
-
-    this.addSeparator(menu);
+      this.addSeparator(menu);
+    }
 
     // Gate learning words based on OS support. At some point we can manage a
     // custom dictionary for Hunspell, but today is not that day
@@ -257,10 +256,10 @@ export default class ContextMenuBuilder {
         click: async () => {
           // NB: This is a gross fix to invalidate the spelling underline,
           // refer to https://github.com/tinyspeck/slack-winssb/issues/354
-          target.replaceMisspelling(menuInfo.selection);
+          target.replaceMisspelling(menuInfo.selectionText);
 
           try {
-            await this.spellChecker.add(menuInfo.misspelledWord);
+            await this.spellCheckHandler.addToDictionary(menuInfo.misspelledWord);
           } catch (e) {
             d(`Failed to add entry to dictionary: ${e.message}`);
           }
