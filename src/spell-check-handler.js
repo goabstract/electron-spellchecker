@@ -12,6 +12,7 @@ require('rxjs/add/observable/empty');
 require('rxjs/add/observable/fromEvent');
 require('rxjs/add/observable/fromPromise');
 require('rxjs/add/observable/of');
+require('rxjs/add/observable/merge');
 
 require('rxjs/add/operator/catch');
 require('rxjs/add/operator/concat');
@@ -19,7 +20,6 @@ require('rxjs/add/operator/concatMap');
 require('rxjs/add/operator/do');
 require('rxjs/add/operator/filter');
 require('rxjs/add/operator/mergeMap');
-require('rxjs/add/operator/merge');
 require('rxjs/add/operator/observeOn');
 require('rxjs/add/operator/reduce');
 require('rxjs/add/operator/startWith');
